@@ -1,0 +1,34 @@
+<?php
+
+// Make sure you have installed the firebase/php-jwt package, or use any other JWT library
+use \Firebase\JWT\JWT;
+use \Firebase\JWT\Key;
+
+function verifyJwtToken($jwt)
+{
+    $secretKey = 'your_secret_key';  // Ensure this is the correct secret key used to sign the JWT
+
+    try {
+        // Decode the JWT token using HS256 algorithm and skip processing 'kid'
+        $decoded = JWT::decode($jwt, new Key($secretKey, 'HS256'));
+
+        // Return the decoded token as an associative array
+        return (array) $decoded;
+    } catch (Exception $e) {
+
+        // Return null if decoding fails
+        return null;
+    }
+}
+
+// Helper function to extract the Bearer token from the Authorization header
+function getBearerToken()
+{
+    $authorizationHeader = getallheaders()['Authorization'] ?? '';
+
+    if (preg_match('/Bearer\s(\S+)/', $authorizationHeader, $matches)) {
+        return $matches[1]; // Return the token if it's found
+    }
+
+    return null; // Return null if no token found
+}
