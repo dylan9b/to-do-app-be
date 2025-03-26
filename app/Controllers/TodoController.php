@@ -8,60 +8,64 @@ use CodeIgniter\RESTful\ResourceController;
 class TodoController extends ResourceController
 {
     protected $modelName = 'App\Models\TodoModel';
-    protected $format    = 'json';
-  
+    protected $format = 'json';
+
 
     public function get()
     {
-      if ($this->request->getMethod() !== 'options') {
+        if ($this->request->getMethod() !== 'options') {
 
-        $jwt = getBearerToken();
+            $jwt = getBearerToken();
 
-        if ($jwt) {
-          $decoded = verifyJwtToken($jwt);
+            if ($jwt) {
+                $decoded = verifyJwtToken($jwt);
 
-          if ($decoded) {
-            // User info from decoded JWT
-            $userId = $decoded['userId'];
-            $roleId = $decoded['roleId'];
+                if ($decoded) {
+                    // User info from decoded JWT
+                    $userId = $decoded['userId'];
+                    $roleId = $decoded['roleId'];
 
-            // Check if user has admin role (optional)
-            $isAdmin = $this->checkIfAdmin($roleId);
+                    // Check if user has admin role (optional)
+                    $isAdmin = $this->checkIfAdmin($roleId);
 
-            // Fetch JSON input data
-            $data = $this->request->getJSON();
+                    // Fetch JSON input data
+                    $data = $this->request->getJSON();
 
-            // If no JSON object is sent, retrieve all todos for the user
-            if (empty((array)$data)) {
-              // Fetch all todos for the user (if not an admin)
-              $todoModel = new TodoModel();
-              $todos = $todoModel->getTodos(!$isAdmin ? $userId : null);
+                    // If no JSON object is sent, retrieve all todos for the user
+                    if (empty((array) $data)) {
+                        // Fetch all todos for the user (if not an admin)
+                        $todoModel = new TodoModel();
+                        $todos = $todoModel->getTodos(!$isAdmin ? $userId : null);
 
-              // Return todos as JSON response, ensuring an empty array is returned if no todos are found
-              return $this->respond($todos ?: []);
+                        // Return todos as JSON response, ensuring an empty array is returned if no todos are found
+                        return $this->respond($todos ?: []);
+                    }
+
+                    // Extract parameters from the JSON payload
+                    $searchTerm = isset($data->searchTerm) ? $data->searchTerm : null;
+                    $priorityId = isset($data->priorityId) ? $data->priorityId : null;
+                    $isCompleted = isset($data->isCompleted) ? $data->isCompleted : null;
+                    $isPinned = isset($data->isPinned) ? $data->isPinned : null;
+                    $orderColumn = isset($data->orderColumn) ? $data->orderColumn : null;
+                    $orderDirection = isset($data->orderDirection) ? $data->orderDirection : null;
+                    $limit = isset($data->limit) ? $data->limit : null;
+                    $offset = isset($data->offset) ? $data->offset : null;
+
+                    // Fetch todos using the TodoModel
+                    $todoModel = new TodoModel();
+                    $todos = $todoModel->getTodos(!$isAdmin ? $userId : null, $searchTerm, $priorityId, $isCompleted, $isPinned, $orderColumn, $orderDirection, $limit, $offset);
+
+                    // Return todos as JSON
+                    return $this->respond($todos ?: []);
+                } else {
+                    // Token is invalid or expired
+                    return $this->failUnauthorized('Invalid or expired token');
+                }
             }
-
-            // Extract parameters from the JSON payload
-            $searchTerm = isset($data->searchTerm) ? $data->searchTerm : null;
-            $priorityId = isset($data->priorityId) ? $data->priorityId : null;
-            $isCompleted = isset($data->isCompleted) ? $data->isCompleted : null;
-            $isPinned = isset($data->isPinned) ? $data->isPinned : null;
-
-            // Fetch todos using the TodoModel
-            $todoModel = new TodoModel();
-            $todos = $todoModel->getTodos(!$isAdmin ? $userId : null, $searchTerm, $priorityId, $isCompleted, $isPinned);
-
-            // Return todos as JSON
-            return $this->respond($todos ?: []);
-          } else {
-              // Token is invalid or expired
-              return $this->failUnauthorized('Invalid or expired token');
-          }
+        } else {
+            // No token provided
+            return $this->failUnauthorized('Authorization token missing');
         }
-      } else {
-        // No token provided
-        return $this->failUnauthorized('Authorization token missing');
-      }
     }
 
     public function update($id = null)
@@ -75,7 +79,7 @@ class TodoController extends ResourceController
             if ($jwt) {
                 // Verify the token
                 $decoded = verifyJwtToken($jwt);
-                
+
                 if ($decoded) {
                     $data = $this->request->getJSON();
 
@@ -183,15 +187,18 @@ class TodoController extends ResourceController
                 'priorityId' => $priorityId,
                 'userId' => $userIdFromToken,
             ];
-        
+
             $id = $this->model->insert($data, true);
 
             if ($id) {
-                $newTodo = $this->model->find($id);  
+                $newTodo = $this->model->find($id);
+                $newTodo['isCompleted'] = (int) $newTodo['isCompleted'];
+                $newTodo['isPinned'] = (int) $newTodo['isPinned'];
+
                 return json_encode([
                     'success' => true,
                     'message' => 'Todo inserted successfully!',
-                    'data' => $newTodo
+                    'todo' => $newTodo
                 ]);
             } else {
 
@@ -200,11 +207,12 @@ class TodoController extends ResourceController
                     'message' => 'Failed to insert todo'
                 ]);
             }
-            
+
         }
     }
 
-    public function delete($id = null)  {
+    public function delete($id = null)
+    {
         // Skip Authorization check for OPTIONS request
         if ($_SERVER['REQUEST_METHOD'] !== 'OPTIONS') {
 
@@ -214,7 +222,7 @@ class TodoController extends ResourceController
             if ($jwt) {
                 // Verify the token (assuming verifyJwtToken() function is defined)
                 $decoded = verifyJwtToken($jwt);
-                
+
                 if ($decoded) {
                     $data = $this->request->getJSON();
 
@@ -226,7 +234,7 @@ class TodoController extends ResourceController
                         'message' => 'Todo deleted successfully',
                         'id' => $todoId
                     ]);
-                   
+
                 } else {
                     return $this->failUnauthorized('Invalid or expired token');
                 }
