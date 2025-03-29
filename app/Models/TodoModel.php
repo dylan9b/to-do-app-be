@@ -100,7 +100,7 @@ class TodoModel extends Model
 
     public function insert($row = null, bool $returnID = true)
     {
-        $row['createdAt'] = date('Y-m-d');
+        $row['createdAt'] = date('Y-m-d H:i:s'); // Use a standard datetime format
 
         // Check if 'id' is missing and generate it
         if (empty($row['id'])) {
