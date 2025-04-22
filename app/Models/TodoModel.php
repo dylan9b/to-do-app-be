@@ -88,6 +88,16 @@ class TodoModel extends Model
         if ($userId) {
             $countBuilder->where('userId', $userId);
         }
+        if ($searchTerm) {
+            $countBuilder->like('title', $searchTerm);
+        }
+        if ($isCompleted !== null) {
+            $countBuilder->where('isCompleted', $isCompleted);
+        }
+        if ($isPinned !== null) {
+            $countBuilder->where('isPinned', $isPinned);
+        }
+
         $totalCountResult = $builder->get()->getRowArray();
         $totalCount = (int) $totalCountResult['total'];
 

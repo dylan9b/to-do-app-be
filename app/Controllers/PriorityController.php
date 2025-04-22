@@ -2,13 +2,12 @@
 
 namespace App\Controllers;
 
-use App\Models\PriorityModel;
 use CodeIgniter\RESTful\ResourceController;
 
 class PriorityController extends ResourceController
 {
     protected $modelName = 'App\Models\PriorityModel'; // Use the PriorityModel
-    protected $format    = 'json'; // Set the response format to JSON
+    protected $format = 'json'; // Set the response format to JSON
 
     public function create()
     {
@@ -36,7 +35,7 @@ class PriorityController extends ResourceController
             ]);
         }
     }
-    
+
 
     public function index()
     {
@@ -71,6 +70,6 @@ class PriorityController extends ResourceController
             }
         }
 
-        return $this->failMethod('Method not allowed');
+        return $this->fail('Method not allowed');
     }
 }
